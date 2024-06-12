@@ -1,0 +1,41 @@
+pipeline {
+  agent any
+
+  tools {
+    maven 'Maven3'
+  }
+
+  environment {
+    DOCKERHUB_CREDENTIALS = credentials('docker')
+    DOCKERHUB_REPO = 'gowri9493/hello-world-webapp'
+  }
+
+  stages {
+    stage ('checkout') {
+      steps {
+        git 'https://github.com/gowri9493/jenkins-example.git'
+      }
+    }
+    stage('Build') {
+      steps {
+        sh 'mvn clean package'
+      }
+    }
+    stage('Build docker image') {
+      steps {
+        script {
+          docker.build("${env.DOCKERHUB_REPO}:${env.BUILD_NUMBER}")
+        }
+      }
+    }
+    stage('Push Docker Image') {
+      steps {
+        script {
+          docker.withRegistry('', "${env.DOCKERHUB_CREDENTIALS}") {
+            docker.image("${env.DOCKERHUB_REPO}:${env.BUILD_NUMBER}").push()
+          }
+        }
+      }
+    }
+  }
+}
